@@ -1,6 +1,6 @@
 // api/telegram.js — Telegram webhook for the class routine bot
 // Env vars needed on Vercel: BOT_TOKEN, SHEET_CSV_URL
-// Sheet columns (row 1): Section | Day | Start | End | Time | Course | Teacher
+// Sheet columns (row 1): Section | Day | Start | End | Time | Course | Teacher | Room
 
 const TZ = "Asia/Dhaka";
 
@@ -57,7 +57,8 @@ function formatReply(title, section, day, list) {
   const lines = list.map((c) => {
     // Use the Time column if filled, otherwise Start–End
     const when = c.time || [c.start, c.end].filter(Boolean).join("–");
-    return `${when}  ${c.course}${c.teacher ? " (" + c.teacher + ")" : ""}`;
+    const extra = [c.teacher, c.room ? "Room " + c.room : ""].filter(Boolean).join(", ");
+    return `${when}  ${c.course}${extra ? " (" + extra + ")" : ""}`;
   });
   return `${title} · ${section}\n${day}\n\n${lines.join("\n")}`;
 }
@@ -111,4 +112,3 @@ module.exports = async (req, res) => {
   await send(msg.chat.id, reply);
   res.status(200).send("ok");
 };
-  
