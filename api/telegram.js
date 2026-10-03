@@ -140,7 +140,9 @@ async function tg(method, payload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  return r.json();
+  const data = await r.json();
+  if (!data.ok) console.error("Telegram error:", method, data.description);
+  return data;
 }
 
 async function sendSectionMenu(chatId, text) {
