@@ -6,6 +6,19 @@ const TZ = "Asia/Dhaka";
 const WEEK = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
 const WELCOME =
   "📚 Class Routine Bot\n\nSee your class routine for any day.\nPick your section below to start.";
+const HELP =
+  "📚 Class Routine Bot\n\n" +
+  "See your class routine in a few taps.\n\n" +
+  "How to use:\n" +
+  "1. Pick your section below\n" +
+  "2. Choose a day (or Today / Tomorrow)\n" +
+  "3. Your classes appear as a table\n\n" +
+  "Commands:\n" +
+  "/start - show this guide\n" +
+  "/help - show this guide\n" +
+  "/sections - choose your section\n" +
+  "/today 72_S - today's classes\n" +
+  "/tomorrow 72_S - tomorrow's classes";
 
 // ---------- Sheet reading ----------
 function parseCSV(text) {
@@ -130,14 +143,17 @@ async function tg(method, payload) {
   return r.json();
 }
 
-async function sendSectionMenu(chatId) {
+async function sendSectionMenu(chatId, text) {
   const sections = await getSections();
   if (!sections.length) {
-    return tg("sendMessage", { chat_id: chatId, text: "No sections found in the sheet yet." });
+    return tg("sendMessage", {
+      chat_id: chatId,
+      text: text + "\n\n⚠️ No sections found in the sheet yet.",
+    });
   }
   return tg("sendMessage", {
     chat_id: chatId,
-    text: WELCOME,
+    text,
     reply_markup: sectionKeyboard(sections),
   });
 }
@@ -147,8 +163,14 @@ async function handleMessage(msg) {
   const cmd = rawCmd.split("@")[0].toLowerCase();
   const chatId = msg.chat.id;
 
-  // Quick commands still work: /today 72_S and /tomorrow 72_S
-  if ((cmd === "/today" || cmd === "/tomorrow") && args[0]) {
+  // /today 72_S and /tomorrow 72_S
+  if (cmd === "/today" || cmd === "/tomorrow") {
+    if (!args[0]) {
+      return tg("sendMessage", {
+        chat_id: chatId,
+        text: `Send it like: ${cmd} 72_S\n\nOr use /sections to pick from buttons.`,
+      });
+    }
     const day = dayName(cmd === "/today" ? 0 : 1);
     const rows = await loadRoutine();
     const text = formatReply(
@@ -160,8 +182,21 @@ async function handleMessage(msg) {
     return tg("sendMessage", { chat_id: chatId, text, parse_mode: "HTML" });
   }
 
-  // /start, /sections, or anything else → show the section menu
-  return sendSectionMenu(chatId);
+  // /sections → just the section buttons
+  if (cmd === "/sections") {
+    return sendSectionMenu(chatId, "Pick your section:");
+  }
+
+  // /start, /help, or anything else → guide + section buttons
+  try {
+    return await sendSectionMenu(chatId, HELP);
+  } catch (e) {
+    console.error(e);
+    return tg("sendMessage", {
+      chat_id: chatId,
+      text: HELP + "\n\n⚠️ Couldn't load sections right now. Please try again in a moment.",
+    });
+  }
 }
 
 async function handleCallback(cq) {
@@ -210,6 +245,15 @@ module.exports = async (req, res) => {
     else if (body.message && body.message.text) await handleMessage(body.message);
   } catch (e) {
     console.error(e);
+    const chatId =
+      (body.message && body.message.chat.id) ||
+      (body.callback_query && body.callback_query.message.chat.id);
+    if (chatId) {
+      await tg("sendMessage", {
+        chat_id: chatId,
+        text: "⚠️ Something went wrong. Please try again in a moment.",
+      }).catch(() => {});
+    }
   }
   res.status(200).send("ok");
 };
