@@ -62,14 +62,28 @@ function classesFor(rows, section, day) {
   );
 }
 
+const esc = (s) =>
+  String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// Builds an aligned table inside a monospace block (Telegram has no real tables)
 function formatReply(title, section, day, list) {
-  if (!list.length) return `${title} · ${section}\n${day}: No classes.`;
-  const lines = list.map((c) => {
-    const when = c.time || [c.start, c.end].filter(Boolean).join("–");
-    const extra = [c.teacher, c.room ? "Room " + c.room : ""].filter(Boolean).join(", ");
-    return `${when}  ${c.course}${extra ? " (" + extra + ")" : ""}`;
-  });
-  return `${title} · ${section}\n${day}\n\n${lines.join("\n")}`;
+  const head = `<b>${esc(title)} · ${esc(section)}</b>\n${esc(day)}`;
+  if (!list.length) return `${head}\n\nNo classes.`;
+
+  const header = ["Time", "Course", "Room", "Tchr"];
+  const rows = list.map((c) => [
+    c.time || [c.start, c.end].filter(Boolean).join("–"),
+    c.course || "",
+    c.room || "",
+    c.teacher || "",
+  ]);
+  const all = [header, ...rows];
+  const widths = header.map((_, i) => Math.max(...all.map((r) => r[i].length)));
+  const line = (r) => r.map((cell, i) => cell.padEnd(widths[i])).join("  ").trimEnd();
+  const sep = widths.map((w) => "─".repeat(w)).join("  ");
+
+  const table = [line(header), sep, ...rows.map(line)].join("\n");
+  return `${head}\n\n<pre>${esc(table)}</pre>`;
 }
 
 function chunk(arr, n) {
@@ -143,7 +157,7 @@ async function handleMessage(msg) {
       day,
       classesFor(rows, args[0], day)
     );
-    return tg("sendMessage", { chat_id: chatId, text });
+    return tg("sendMessage", { chat_id: chatId, text, parse_mode: "HTML" });
   }
 
   // /start, /sections, or anything else → show the section menu
@@ -165,7 +179,7 @@ async function handleCallback(cq) {
     markup = sectionKeyboard(await getSections());
   } else if (data.startsWith("s:")) {
     const section = data.slice(2);
-    text = `Section ${section}\n\nChoose a day:`;
+    text = `Section ${esc(section)}\n\nChoose a day:`;
     markup = dayKeyboard(section);
   } else if (data.startsWith("d:")) {
     const [, section, which] = data.split(":");
@@ -182,6 +196,7 @@ async function handleCallback(cq) {
     chat_id: chatId,
     message_id: messageId,
     text,
+    parse_mode: "HTML",
     reply_markup: markup,
   });
 }
