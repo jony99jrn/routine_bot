@@ -201,7 +201,7 @@ async function handleMessage(msg) {
     const r = await tg("sendPhoto", {
       chat_id: chatId,
       photo: PLANNER_PHOTO,
-      caption: "📅 Routine planner",
+      caption: "Plan your weekly routine🤞",
     });
     if (!r.ok) {
       await tg("sendMessage", {
