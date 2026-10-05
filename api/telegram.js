@@ -7,7 +7,7 @@ const WEEK = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"
 
 // 👇 Paste the link to your planner picture here (it must open as a picture in Chrome).
 // Example: https://raw.githubusercontent.com/jony99jrn/REPO/main/planner.png
-const PLANNER_PHOTO = "https://raw.githubusercontent.com/jony99jrn/REPO/main/planner.png";
+const PLANNER_PHOTO = "https://raw.githubusercontent.com/jony99jrn/routine_bot/refs/heads/main/planner.png";
 
 const WELCOME =
   "📚 Class Routine Bot\n\nSee your class routine for any day.\nPick your section below to start.";
