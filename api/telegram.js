@@ -4,6 +4,11 @@
 
 const TZ = "Asia/Dhaka";
 const WEEK = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
+
+// 👇 Paste the link to your planner picture here (it must open as a picture in Chrome).
+// Example: https://raw.githubusercontent.com/jony99jrn/REPO/main/planner.png
+const PLANNER_PHOTO = "https://raw.githubusercontent.com/jony99jrn/REPO/main/planner.png";
+
 const WELCOME =
   "📚 Class Routine Bot\n\nSee your class routine for any day.\nPick your section below to start.";
 const HELP =
@@ -18,7 +23,8 @@ const HELP =
   "/help - show this guide\n" +
   "/sections - choose your section\n" +
   "/today 72_S - today's classes\n" +
-  "/tomorrow 72_S - tomorrow's classes";
+  "/tomorrow 72_S - tomorrow's classes\n" +
+  "/routine_planner - get the routine planner picture";
 
 // ---------- Sheet reading ----------
 function parseCSV(text) {
@@ -182,6 +188,28 @@ async function handleMessage(msg) {
       classesFor(rows, args[0], day)
     );
     return tg("sendMessage", { chat_id: chatId, text, parse_mode: "HTML" });
+  }
+
+  // /routine_planner → sends the planner picture
+  if (cmd === "/routine_planner") {
+    if (!PLANNER_PHOTO.startsWith("http")) {
+      return tg("sendMessage", {
+        chat_id: chatId,
+        text: "⚠️ The planner picture isn't set up yet.",
+      });
+    }
+    const r = await tg("sendPhoto", {
+      chat_id: chatId,
+      photo: PLANNER_PHOTO,
+      caption: "📅 Routine planner",
+    });
+    if (!r.ok) {
+      await tg("sendMessage", {
+        chat_id: chatId,
+        text: "⚠️ Couldn't send the picture right now. Please try again later.",
+      });
+    }
+    return r;
   }
 
   // /sections → just the section buttons
